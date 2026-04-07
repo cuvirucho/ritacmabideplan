@@ -40,7 +40,14 @@ const PLANS = {
 const UPGRADE_PRICE = 35;
 
 function App() {
-  const [currentPlan, setCurrentPlan] = useState("premium");
+  const userId = params.get("userId");
+  const plan = params.get("plan");
+
+  console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
+
+  const [currentPlan, setCurrentPlan] = useState(
+    plan === "premium" ? "premium" : "starter",
+  );
   const otherPlanId = currentPlan === "starter" ? "premium" : "starter";
   const [selectedPlan, setSelectedPlan] = useState(otherPlanId);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -86,11 +93,6 @@ function App() {
   };
 
   const params = new URLSearchParams(window.location.search);
-
-  const userId = params.get("userId");
-  const plan = params.get("plan");
-
-  console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
 
   const handleDowngradeConfirm = () => {
     handleConfirmChange();
@@ -274,6 +276,7 @@ function App() {
           Rita <span>Fit</span>
         </h1>
         <p className="subtitle">Gestiona tu plan de alimentación</p>
+        <p className="subtitle">{`Usuario: ${userId} - Plan: ${plan}`}</p>
       </div>
 
       {/* Current Plan Card */}
