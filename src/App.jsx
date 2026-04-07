@@ -48,7 +48,7 @@ function App() {
   console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
 
   const [currentPlan, setCurrentPlan] = useState(
-    plan === "Plan Premium" ? "starter" : "premium",
+    plan === "Plan Premium" ? "premium" : "starter",
   );
   const otherPlanId = currentPlan === "starter" ? "premium" : "starter";
   const [selectedPlan, setSelectedPlan] = useState(otherPlanId);
@@ -94,8 +94,28 @@ function App() {
     }
   };
 
-  const handleDowngradeConfirm = () => {
-    handleConfirmChange();
+  const handleDowngradeConfirm = async () => {
+    try {
+      const response = await fetch(
+        "https://us-central1-rita-ede4f.cloudfunctions.net/api/downgrade",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: userId,
+          }),
+        },
+      );
+      console.log(response, "resptadeelepit");
+
+      if (!response.ok) {
+        throw new Error("Error al procesar el downgrade");
+      }
+      handleConfirmChange();
+    } catch (error) {
+      console.error(error);
+      alert("Error al procesar tu solicitud. Por favor, intenta de nuevo.");
+    }
   };
 
   /* PayPhone payment for upgrade */
