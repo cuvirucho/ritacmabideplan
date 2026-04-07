@@ -40,14 +40,14 @@ const PLANS = {
 const UPGRADE_PRICE = 35;
 
 function App() {
+  const params = new URLSearchParams(window.location.search);
+
   const userId = params.get("userId");
   const plan = params.get("plan");
 
   console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
 
-  const [currentPlan, setCurrentPlan] = useState(
-    plan === "premium" ? "premium" : "starter",
-  );
+  const [currentPlan, setCurrentPlan] = useState("starter");
   const otherPlanId = currentPlan === "starter" ? "premium" : "starter";
   const [selectedPlan, setSelectedPlan] = useState(otherPlanId);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -91,8 +91,6 @@ function App() {
       console.log("postMessage (navegador):", message);
     }
   };
-
-  const params = new URLSearchParams(window.location.search);
 
   const handleDowngradeConfirm = () => {
     handleConfirmChange();
