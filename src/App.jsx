@@ -40,7 +40,7 @@ const PLANS = {
 const UPGRADE_PRICE = 35;
 
 function App() {
-  const [currentPlan, setCurrentPlan] = useState("starter");
+  const [currentPlan, setCurrentPlan] = useState("premium");
   const otherPlanId = currentPlan === "starter" ? "premium" : "starter";
   const [selectedPlan, setSelectedPlan] = useState(otherPlanId);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -85,7 +85,7 @@ function App() {
           body: JSON.stringify({
             form: {},
             cart: {
-              nombre: "Upgrade a Premium",
+              nombre: "Plan Premium",
               precioVenta: UPGRADE_PRICE,
               cantidad: 1,
             },
