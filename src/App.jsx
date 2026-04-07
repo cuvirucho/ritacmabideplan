@@ -85,6 +85,13 @@ function App() {
     }
   };
 
+  const params = new URLSearchParams(window.location.search);
+
+  const userId = params.get("userId");
+  const plan = params.get("plan");
+
+  console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
+
   const handleDowngradeConfirm = () => {
     handleConfirmChange();
   };
