@@ -54,12 +54,12 @@ function App() {
   const isUpgrade = otherPlanId === "premium";
 
   const handleConfirmChange = () => {
+    irALogin();
     setCurrentPlan(otherPlanId);
     setShowConfirm(false);
     setShowDowngradeModal(false);
     setShowPayment(false);
     setSuccess(true);
-    irALogin();
   };
 
   const handleCTAClick = () => {
@@ -73,17 +73,15 @@ function App() {
   /*conetar el webvie*/
 
   const irALogin = () => {
+    const message = JSON.stringify({
+      type: "GO_LOGIN",
+    });
+
     if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(
-        JSON.stringify({
-          type: "GO_LOGIN",
-          email: usuario?.email || paymentData?.email,
-          codigo: usuario?.tempPassword || paymentData?.authorizationCode,
-        }),
-      );
+      window.ReactNativeWebView.postMessage(message);
     } else {
       // por si abres la web en navegador normal
-      navigate("/");
+      console.log("postMessage (navegador):", message);
     }
   };
 
