@@ -59,6 +59,7 @@ function App() {
     setShowDowngradeModal(false);
     setShowPayment(false);
     setSuccess(true);
+    irALogin();
   };
 
   const handleCTAClick = () => {
@@ -66,6 +67,23 @@ function App() {
       setShowPayment(true);
     } else {
       setShowDowngradeModal(true);
+    }
+  };
+
+  /*conetar el webvie*/
+
+  const irALogin = () => {
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: "GO_LOGIN",
+          email: usuario?.email || paymentData?.email,
+          codigo: usuario?.tempPassword || paymentData?.authorizationCode,
+        }),
+      );
+    } else {
+      // por si abres la web en navegador normal
+      navigate("/");
     }
   };
 
