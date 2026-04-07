@@ -47,7 +47,9 @@ function App() {
 
   console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
 
-  const [currentPlan, setCurrentPlan] = useState("starter");
+  const [currentPlan, setCurrentPlan] = useState(
+    plan === "Plan Premium" ? "premium" : "starter",
+  );
   const otherPlanId = currentPlan === "starter" ? "premium" : "starter";
   const [selectedPlan, setSelectedPlan] = useState(otherPlanId);
   const [showConfirm, setShowConfirm] = useState(false);
