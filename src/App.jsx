@@ -6,7 +6,8 @@ const PLANS = {
     id: "starter",
     name: "Plan Starter",
     priceOld: 346,
-    price: 173,
+    price: 145,
+    priceconimputos: 173,
     savings: 201,
     discount: "50% OFF",
     features: [
@@ -22,7 +23,8 @@ const PLANS = {
     id: "premium",
     name: "Plan Premium",
     priceOld: 416,
-    price: 208,
+    price: 175,
+    priceconimputos: 208,
     savings: 241,
     discount: "50% OFF",
     features: [
@@ -44,35 +46,43 @@ function App() {
 
   const userId = params.get("userId");
   const plan = params.get("plan");
+  const renovarParam = params.get("renovar");
+  const isRenewalFlow = ["true", "1", "si", "yes"].includes(
+    (renovarParam || "").toLowerCase(),
+  );
 
   console.log(userId, plan); // ya viene bien formateado para usarlo directo en el fetch
 
-  const [currentPlan, setCurrentPlan] = useState(
-    plan === "Plan Premium" ? "premium" : "starter",
-  );
+  const normalizedPlan = (plan || "").toLowerCase();
+  const initialPlanId = normalizedPlan.includes("premium")
+    ? "premium"
+    : "starter";
+
+  const [currentPlan, setCurrentPlan] = useState(initialPlanId);
   const otherPlanId = currentPlan === "starter" ? "premium" : "starter";
   const [selectedPlan, setSelectedPlan] = useState(otherPlanId);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentLoading, setPaymentLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const current = PLANS[currentPlan];
-  const selected = PLANS[otherPlanId];
-  const isUpgrade = otherPlanId === "premium";
+  const selected = PLANS[selectedPlan];
+  const targetPlan = isRenewalFlow ? current : selected;
+  const checkoutAmount = isRenewalFlow ? current.price : UPGRADE_PRICE;
+  const isUpgrade = selectedPlan === "premium";
 
   const handleConfirmChange = () => {
     irALogin();
-    setCurrentPlan(otherPlanId);
-    setShowConfirm(false);
+    if (!isRenewalFlow) {
+      setCurrentPlan(selectedPlan);
+    }
     setShowDowngradeModal(false);
     setShowPayment(false);
     setSuccess(true);
   };
 
   const handleCTAClick = () => {
-    if (isUpgrade) {
+    if (isRenewalFlow || isUpgrade) {
       setShowPayment(true);
     } else {
       setShowDowngradeModal(true);
@@ -120,7 +130,6 @@ function App() {
 
   /* PayPhone payment for upgrade */
   const initPayment = async () => {
-    setPaymentLoading(true);
     try {
       const response = await fetch(
         "https://us-central1-rita-ede4f.cloudfunctions.net/api/create-order",
@@ -131,7 +140,7 @@ function App() {
             form: {},
             cart: {
               nombre: "Plan Premium",
-              precioVenta: UPGRADE_PRICE,
+              precioVenta: renovarParam ? current.price : UPGRADE_PRICE,
               cantidad: 1,
             },
           }),
@@ -167,7 +176,6 @@ function App() {
       console.error(error);
       alert("Error al iniciar el pago");
     }
-    setPaymentLoading(false);
   };
 
   useEffect(() => {
@@ -178,8 +186,6 @@ function App() {
 
   if (success) {
     const newPlan = PLANS[currentPlan];
-    const oldPlanId = currentPlan === "starter" ? "premium" : "starter";
-    const oldPlan = PLANS[oldPlanId];
     return (
       <div className="page-wrapper">
         <div className="success-screen">
@@ -198,9 +204,13 @@ function App() {
             </svg>
           </div>
 
-          <h2>¡Cambio realizado!</h2>
+          <h2>
+            {isRenewalFlow ? "¡Renovacion realizada!" : "¡Cambio realizado!"}
+          </h2>
           <p className="success-subtitle">
-            Tu plan ha sido actualizado exitosamente
+            {isRenewalFlow
+              ? "Tu plan fue renovado exitosamente"
+              : "Tu plan ha sido actualizado exitosamente"}
           </p>
 
           {/* Plan change summary card */}
@@ -210,11 +220,15 @@ function App() {
                 {currentPlan === "premium" ? "👑" : "⚡"}
               </div>
               <div>
-                <div className="success-plan-label">Tu nuevo plan</div>
+                <div className="success-plan-label">
+                  {isRenewalFlow ? "Plan renovado" : "Tu nuevo plan"}
+                </div>
                 <div className="success-plan-name">{newPlan.name}</div>
               </div>
               <div className="success-plan-price">
-                <span className="success-price-amount">${newPlan.price}</span>
+                <span className="success-price-amount">
+                  ${newPlan.priceconimputos}
+                </span>
                 <span className="success-price-period">/mes</span>
               </div>
             </div>
@@ -226,8 +240,16 @@ function App() {
               <div className="timeline-item done">
                 <div className="timeline-dot" />
                 <div className="timeline-content">
-                  <span className="timeline-title">Plan actualizado</span>
-                  <span className="timeline-desc">Cambio procesado ahora</span>
+                  <span className="timeline-title">
+                    {isRenewalFlow
+                      ? "Renovacion confirmada"
+                      : "Plan actualizado"}
+                  </span>
+                  <span className="timeline-desc">
+                    {isRenewalFlow
+                      ? "Renovacion procesada ahora"
+                      : "Cambio procesado ahora"}
+                  </span>
                 </div>
                 <span className="timeline-status">✓</span>
               </div>
@@ -248,7 +270,9 @@ function App() {
                 <div className="timeline-content">
                   <span className="timeline-title">Próxima facturación</span>
                   <span className="timeline-desc">
-                    Se cobrará ${newPlan.price}/mes en tu próximo ciclo
+                    {isRenewalFlow
+                      ? `Se renovara por $${newPlan.priceconimputos}/mes en tu siguiente ciclo`
+                      : `Se cobrará $${newPlan.priceconimputos}/mes en tu próximo ciclo`}
                   </span>
                 </div>
                 <span className="timeline-status">⏳</span>
@@ -270,9 +294,11 @@ function App() {
               className="btn-back"
               onClick={() => {
                 setSuccess(false);
-                setSelectedPlan(
-                  currentPlan === "starter" ? "premium" : "starter",
-                );
+                if (!isRenewalFlow) {
+                  setSelectedPlan(
+                    currentPlan === "starter" ? "premium" : "starter",
+                  );
+                }
               }}
             >
               ← Volver a planes
@@ -313,7 +339,7 @@ function App() {
             <div className="plan-name-row">{current.name}</div>
           </div>
           <div className="current-plan-price">
-            <div className="amount">${current.price}</div>
+            <div className="amount">${current.priceconimputos}</div>
             <div className="period">/mes</div>
           </div>
         </div>
@@ -321,83 +347,149 @@ function App() {
 
       {/* Section Label */}
       <div className="section-label">
-        <span>{isUpgrade ? "⬆ Upgrade disponible" : "Cambiar a"}</span>
+        <span>
+          {isRenewalFlow
+            ? "🔄 Renovar plan actual"
+            : isUpgrade
+              ? "⬆ Upgrade disponible"
+              : "Cambiar a"}
+        </span>
       </div>
 
-      {/* Other Plan Card */}
-      <div className="plans-container single">
-        {Object.values(PLANS)
-          .filter((plan) => plan.id !== currentPlan)
-          .map((plan) => {
-            const isUpgradeCard = plan.id === "premium";
-            return (
-              <div
-                key={plan.id}
-                className="plan-card active"
-                onClick={() => setSelectedPlan(plan.id)}
-              >
-                <div className="plan-badge-row">
-                  <span className="plan-label">🔥 PRECIO DE LANZAMIENTO</span>
-                  <span className="active-tag">
-                    {isUpgradeCard ? "⬆ Upgrade" : "⬇ Básico"}
-                  </span>
-                </div>
-
-                <h2 className="plan-name">{plan.name}</h2>
-
-                <div className="plan-price-row">
-                  <span className="price-old">${plan.priceOld}</span>
-                  <span className="price-current">${plan.price}</span>
-                  <span className="price-period">/ mes</span>
-                </div>
-                <div className="plan-savings">
-                  💰 Ahorras ${plan.savings}/mes — {plan.discount}
-                </div>
-
-                <div className="divider" />
-
-                <ul className="plan-features">
-                  {plan.features.map((f, i) => (
-                    <li key={i}>
-                      <span className="check">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
+      {isRenewalFlow ? (
+        <>
+          <div className="plans-container single">
+            <div className="plan-card active renewal-card">
+              <div className="plan-badge-row">
+                <span className="plan-label">🔄 RENOVACIÓN</span>
+                <span className="active-tag">Plan actual</span>
               </div>
-            );
-          })}
-      </div>
 
-      {/* Comparison Strip */}
-      <div className="comparison-strip">
-        <div className="comp-from">
-          <span className="comp-label">Actual</span>
-          <span className="comp-name">{current.name}</span>
-        </div>
-        <div className="comp-arrow">→</div>
-        <div className="comp-to">
-          <span className="comp-label">Nuevo</span>
-          <span className="comp-name">{selected.name}</span>
-        </div>
-        <div className={`comp-diff ${isUpgrade ? "upgrade" : ""}`}>
-          <div className="diff-value">
-            {isUpgrade
-              ? `+$${selected.price - current.price + 7}`
-              : `-$${current.price - selected.price - 7}`}
+              <h2 className="plan-name">{current.name}</h2>
+
+              <div className="plan-price-row">
+                <span className="price-current">
+                  ${current.priceconimputos}
+                </span>
+                <span className="price-period">/ mes</span>
+              </div>
+              <div className="plan-savings renewal-highlight">
+                ✅ Renovaras exactamente tu mismo plan
+              </div>
+
+              <div className="divider" />
+
+              <ul className="plan-features">
+                {current.features.map((f, i) => (
+                  <li key={i}>
+                    <span className="check">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <div className="diff-label">/mes</div>
-        </div>
-      </div>
+
+          <div className="renewal-strip">
+            <div className="renewal-row">
+              <span className="renewal-label">Plan a renovar</span>
+              <span className="renewal-value">{current.name}</span>
+            </div>
+            <div className="renewal-row">
+              <span className="renewal-label">Valor de renovación hoy</span>
+              <span className="renewal-value strong">
+                ${current.priceconimputos}
+              </span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Other Plan Card */}
+          <div className="plans-container single">
+            {Object.values(PLANS)
+              .filter((plan) => plan.id !== currentPlan)
+              .map((plan) => {
+                const isUpgradeCard = plan.id === "premium";
+                return (
+                  <div
+                    key={plan.id}
+                    className="plan-card active"
+                    onClick={() => setSelectedPlan(plan.id)}
+                  >
+                    <div className="plan-badge-row">
+                      <span className="plan-label">
+                        🔥 PRECIO DE LANZAMIENTO
+                      </span>
+                      <span className="active-tag">
+                        {isUpgradeCard ? "⬆ Upgrade" : "⬇ Básico"}
+                      </span>
+                    </div>
+
+                    <h2 className="plan-name">{plan.name}</h2>
+
+                    <div className="plan-price-row">
+                      <span className="price-old">${plan.priceOld}</span>
+                      <span className="price-current">
+                        ${plan.priceconimputos}
+                      </span>
+                      <span className="price-period">/ mes</span>
+                    </div>
+                    <div className="plan-savings">
+                      💰 Ahorras ${plan.savings}/mes — {plan.discount}
+                    </div>
+
+                    <div className="divider" />
+
+                    <ul className="plan-features">
+                      {plan.features.map((f, i) => (
+                        <li key={i}>
+                          <span className="check">✓</span> {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Comparison Strip */}
+          <div className="comparison-strip">
+            <div className="comp-from">
+              <span className="comp-label">Actual</span>
+              <span className="comp-name">{current.name}</span>
+            </div>
+            <div className="comp-arrow">→</div>
+            <div className="comp-to">
+              <span className="comp-label">Nuevo</span>
+              <span className="comp-name">{selected.name}</span>
+            </div>
+            <div className={`comp-diff ${isUpgrade ? "upgrade" : ""}`}>
+              <div className="diff-value">
+                {isUpgrade
+                  ? `+$${selected.priceconimputos - current.priceconimputos + 7}`
+                  : `-$${current.priceconimputos - selected.priceconimputos}`}
+              </div>
+              <div className="diff-label">/mes</div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* CTA */}
       <button
-        className={`btn-confirm ${!isUpgrade ? "downgrade" : ""}`}
+        className={`btn-confirm ${!isUpgrade && !isRenewalFlow ? "downgrade" : ""}`}
         onClick={handleCTAClick}
       >
-        {isUpgrade ? "🚀 Actualizar a Premium" : "Cambiar a Starter"}
+        {isRenewalFlow
+          ? `🔄 Renovar ${current.name}`
+          : isUpgrade
+            ? "🚀 Actualizar a Premium"
+            : "Cambiar a Starter"}
       </button>
       <div className="secure-note">
-        🔒 Precio de lanzamiento garantizado de por vida
+        {isRenewalFlow
+          ? "🔒 Renovación segura y activación inmediata"
+          : "🔒 Precio de lanzamiento garantizado de por vida"}
       </div>
 
       {/* WhatsApp */}
@@ -420,10 +512,20 @@ function App() {
           <div className="pay-modal" onClick={(e) => e.stopPropagation()}>
             {/* Banner */}
             <div className="pay-preventa-banner">
-              <span className="pay-preventa-icon">🔥</span>
+              <span className="pay-preventa-icon">
+                {isRenewalFlow ? "🔄" : "🔥"}
+              </span>
               <div className="pay-preventa-text">
-                <strong>¡Upgrade a Premium!</strong>
-                <span>Paga solo la diferencia — Precio exclusivo</span>
+                <strong>
+                  {isRenewalFlow
+                    ? `Renovación de ${current.name}`
+                    : "¡Upgrade a Premium!"}
+                </strong>
+                <span>
+                  {isRenewalFlow
+                    ? "Mantén tus beneficios activos sin interrupciones"
+                    : "Paga solo la diferencia — Precio exclusivo"}
+                </span>
               </div>
             </div>
 
@@ -431,15 +533,24 @@ function App() {
               {/* Resumen */}
               <div className="pay-summary-card">
                 <div className="pay-badge-row">
-                  <span className="pay-badge-preventa">👑 PREMIUM</span>
-                  <span className="pay-badge-off">UPGRADE</span>
+                  <span className="pay-badge-preventa">
+                    {isRenewalFlow ? "🔄 RENOVACIÓN" : "👑 PREMIUM"}
+                  </span>
+                  <span className="pay-badge-off">
+                    {isRenewalFlow ? "MISMO PLAN" : "UPGRADE"}
+                  </span>
                 </div>
-                <h2 className="pay-plan-name">Upgrade a Plan Premium</h2>
+                <h2 className="pay-plan-name">
+                  {isRenewalFlow
+                    ? `Renovar ${current.name}`
+                    : "Upgrade a Plan Premium"}
+                </h2>
                 <div className="pay-guarantee">
                   <span>🛡️</span>
                   <p>
-                    Solo pagas la diferencia entre tu plan actual y Premium.
-                    Precio garantizado de por vida.
+                    {isRenewalFlow
+                      ? "Renueva tu plan actual al valor correspondiente para seguir con todos tus beneficios."
+                      : "Solo pagas la diferencia entre tu plan actual y Premium. Precio garantizado de por vida."}
                   </p>
                 </div>
               </div>
@@ -448,26 +559,53 @@ function App() {
               <div className="pay-action-card">
                 <div className="pay-action-header">
                   <span className="pay-action-lock">🔒</span>
-                  <h3>Completa tu upgrade</h3>
+                  <h3>
+                    {isRenewalFlow
+                      ? "Completa tu renovación"
+                      : "Completa tu upgrade"}
+                  </h3>
                 </div>
 
-                <div className="pay-order-line">
-                  <span>Plan Premium</span>
-                  <span className="pay-order-price">
-                    ${PLANS.premium.price}/mes
-                  </span>
-                </div>
-                <div className="pay-order-line">
-                  <span>Plan Starter (actual)</span>
-                  <span className="pay-order-price">
-                    -${PLANS.starter.price}/mes
-                  </span>
-                </div>
-                <div className="pay-order-divider" />
-                <div className="pay-order-line pay-order-total">
-                  <span>Total a pagar hoy</span>
-                  <span>${42}</span>
-                </div>
+                {isRenewalFlow ? (
+                  <>
+                    <div className="pay-order-line">
+                      <span>{current.name}</span>
+                      <span className="pay-order-price">
+                        ${current.priceconimputos}/mes
+                      </span>
+                    </div>
+                    <div className="pay-order-divider" />
+                    <div className="pay-order-line pay-order-total">
+                      <span>Total a pagar hoy</span>
+                      <span>${current.priceconimputos}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="pay-order-line">
+                      <span>Plan Premium</span>
+                      <span className="pay-order-price">
+                        ${PLANS.premium.priceconimputos}/mes
+                      </span>
+                    </div>
+                    <div className="pay-order-line">
+                      <span>Plan Starter (actual)</span>
+                      <span className="pay-order-price">
+                        -${PLANS.starter.priceconimputos}/mes
+                      </span>
+                    </div>
+                    <div className="pay-order-line">
+                      <span>IVA</span>
+                      <span className="pay-order-price">%15</span>
+                    </div>
+
+                    <div className="pay-order-divider" />
+                    <div className="pay-order-line pay-order-total">
+                      <span>Total a pagar hoy</span>
+                      <span>${checkoutAmount + 7} </span>
+                    </div>
+                  </>
+                )}
 
                 <div id="pp-button" className="pay-pp-slot"></div>
 
@@ -478,7 +616,9 @@ function App() {
                 </div>
 
                 <p className="pay-urgency">
-                  🔥 ¡Aprovecha el precio de lanzamiento y sube a Premium hoy!
+                  {isRenewalFlow
+                    ? "💡 Renueva ahora y mantén tu plan activo sin pausas"
+                    : "🔥 ¡Aprovecha el precio de lanzamiento y sube a Premium hoy!"}
                 </p>
               </div>
 
@@ -518,8 +658,9 @@ function App() {
               <li>❌ Regalo sorpresa mensual</li>
             </ul>
             <p className="downgrade-note">
-              Tu nuevo precio será <strong>${PLANS.starter.price}/mes</strong>.
-              El cambio se aplica de inmediato.
+              Tu nuevo precio será{" "}
+              <strong>${PLANS.starter.priceconimputos}/mes</strong>. El cambio
+              se aplica de inmediato.
             </p>
             <div className="modal-buttons">
               <button

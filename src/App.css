@@ -330,6 +330,54 @@
   color: var(--text-primary);
 }
 
+.renewal-card {
+  border-color: var(--border-primary);
+}
+
+.renewal-highlight {
+  color: var(--primary-dark);
+  background: var(--primary-light);
+}
+
+.renewal-strip {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.renewal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.renewal-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.renewal-value {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: right;
+}
+
+.renewal-value.strong {
+  color: var(--primary);
+  font-size: 1.05rem;
+}
+
 /* ===== Comparison Strip ===== */
 .comparison-strip {
   width: 100%;
